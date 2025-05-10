@@ -40,9 +40,7 @@ class Player(GameSprite):
         self.is_parrying = False
         self.parry_duration = 30  
         self.parry_timer = 0  
-    def __init__(self, filename, w, h, speed, x, y):
-        super().__init__(filename, w, h, speed, x, y)
-        self.healthmy = 10   
+
     def update(self):
         keys_pressed = key.get_pressed()
         if keys_pressed[K_a] and self.rect.x > 0:
@@ -59,11 +57,20 @@ class Player(GameSprite):
     def fire(self):
         bullet = Bullet('High_Velocity_Bullet.jpg', 10, 20, 10, self.rect.centerx, self.rect.top)
         bullets.add(bullet)
+        if current_weapon_index == 1:
+            bullet = Bullet('High_Velocity_Bullet.jpg', 10, 20, 10, self.rect.left, self.rect.top)
+            bullets.add(bullet)
+            bullet = Bullet('High_Velocity_Bullet.jpg', 10, 20, 10, self.rect.right, self.rect.top)
+            bullets.add(bullet)
     def parry(self):
         if not self.is_parrying:
             self.is_parrying = True
             self.parry_timer = self.parry_duration
 class Enemy(GameSprite):
+    def __init__(self, filename, w, h, speed, x, y):
+        super().__init__(filename, w, h, speed, x, y)
+        self.healthmy = 5 
+        self.damage = 2
     def update(self):
         global lost
         self.rect.y += self.speed
@@ -72,24 +79,27 @@ class Enemy(GameSprite):
            self.rect.x = randint(0, 700 - self.rect.w)
            self.speed = randint(1, 5)
            lost += 1
+
+class Bullet(GameSprite):
     def __init__(self, filename, w, h, speed, x, y):
         super().__init__(filename, w, h, speed, x, y)
-        self.damage = 2
-class Bullet(GameSprite):
+        self.damage = 3
     def update(self):
         self.rect.y -= self.speed
         if self.rect.y <= 0:
             self.kill()
+        
 class Weapon:
-    def __init__(self, name, fire_rate):
+    def __init__(self, name, fire_rate, dps):
         self.name = name
         self.fire_rate = fire_rate
+        self.dps = dps
 
 weapons = [
-    Weapon ("Пистолет", 2),         # 2 выстрела в секунду
-    Weapon("Дробовик", 1),         # 1 выстрел в секунду
-    Weapon("Автомат", 5),          # 5 выстрелов в секунду
-    Weapon("Снайперская винтовка", 0.5)  # Полвыстрела в секунду (один выстрел за два секунды)
+    Weapon ("Пистолет", 3, 3),         # 2 выстрела в секунду
+    Weapon("Дробовик", 2, 2),         # 1 выстрел в секунду
+    Weapon("Автомат", 7, 1),          # 5 выстрелов в секунду
+    Weapon("Снайперская винтовка", 1, 10)  # Полвыстрела в секунду (один выстрел за два секунды)
 ]
 current_weapon_index = 0
 last_shot_time = 0
@@ -98,12 +108,13 @@ last_shot_time = 0
 
 
 
+
 player = Player('images-no-bg-preview (carve.photos).png', 65, 65, 10, 350, 430)
-enemy1 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1, 5), randint(0, 635), -50)
-enemy2 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1, 5), randint(0, 635), -50) 
-enemy3 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1, 5), randint(0, 635), -50) 
-enemy4 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1, 5), randint(0, 635), -50)
-enemy5 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1, 5), randint(0, 635), -50)
+enemy1 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1, 3), randint(0, 635), -50)
+enemy2 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1, 3), randint(0, 635), -50) 
+enemy3 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1, 3), randint(0, 635), -50) 
+enemy4 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1, 3), randint(0, 635), -50)
+enemy5 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1, 3), randint(0, 635), -50)
 start = GameSprite('pngtree-finish-button-in-pixel-art-style-png-image_5683603.png', 200, 100, 0, 250, 300)
 
 
@@ -140,23 +151,36 @@ while game:
         win.blit(text_kill, (50, 20))
         text_life = font4.render('Ультрахп: ' + str(player.health), 1, (0, 230, 0))
         win.blit(text_life, (50, 80))
-        sprites_list1 = sprite.groupcollide(enemies, bullets, True, True)
+        sprites_list1 = sprite.groupcollide(enemies, bullets, False, False)
         for enemy1 in sprites_list1:
-            kill += 1
-            enemy1 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1, 5), randint(0, 635), -50)
-            enemies.add(enemy1)
+            # print(sprites_list1[enemy1])
+            for bullet in sprites_list1[enemy1]:
+                bullet.damage = current_weapon.dps
+                enemy1.healthmy -= bullet.damage
+                print(enemy1.healthmy, bullet.damage)  
+                # for bullet in bullets:
+                bullet.kill()
+                        
+                if enemy1.healthmy <= 0:
+                    enemy1.kill()
+                    enemy1 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1, 5), randint(0, 635), -50)
+                    enemies.add(enemy1)
         for e in event.get():
             if e.type == QUIT:
                 game = False
             if e.type == KEYDOWN:
                 if e.key == K_i:
                     weapon = weapons[current_weapon_index]
+                    
                     current_time = time.get_ticks()
                     if current_time - last_shot_time >= (1000 / weapon.fire_rate):
                         last_shot_time = current_time
+                        bullet_dps = current_time
                         current_weapon = weapons[current_weapon_index]
-                        player.fire()         
-                if e.key == K_p:
+                        player.fire()
+
+                           
+                if e.key == K_o:
                     # print('p')
                     if not player.is_parrying:
                         player.start_time = time.get_ticks()
@@ -178,8 +202,6 @@ while game:
         if player.health <= 0:
             finish = True
             win.blit(losers, (200, 200))
-        if enemies.healthmy <= 0:
-
         # if len(sprite.spritecollide(player, enemies, False)) > 0:
         for enemy in sprite.spritecollide(player, enemies, False):
             print('столкнулся')
