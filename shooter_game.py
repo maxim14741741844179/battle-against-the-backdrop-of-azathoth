@@ -88,6 +88,28 @@ class Bullet(GameSprite):
         self.rect.y -= self.speed
         if self.rect.y <= 0:
             self.kill()
+class Boss(GameSprite):
+    def __init__(self, filename, w, h, speed, x, y):
+        super().__init__(filename, w, h, speed, x, y)
+        self.healthb = 10
+        self.last_shot_time = time.get_ticks()
+        self.shoot_interval = 200
+    def shoot(self):
+        current_time = time.get_ticks()
+        if current_time - self.last_shot_time > self.shoot_interval:
+            self.last_shot_time = current_time
+class Bulletb(GameSprite):
+    def __init__(self, filename, w, h, speed, x, y):
+        super().__init__(filename, w, h, speed, x, y)
+        self.damage = 3
+    def update(self):
+        self.rect.y += self.speed
+        if self.rect.y <= 0:
+            self.kill()
+
+
+
+
         
 class Weapon:
     def __init__(self, name, fire_rate, dps):
@@ -116,7 +138,7 @@ enemy3 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1,
 enemy4 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1, 3), randint(0, 635), -50)
 enemy5 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1, 3), randint(0, 635), -50)
 start = GameSprite('pngtree-finish-button-in-pixel-art-style-png-image_5683603.png', 200, 100, 0, 250, 300)
-
+boss = Boss('1383287635_1755349320-no-bg-preview (carve.photos).png', 500, 250, 0, 100, 10)
 
 
 enemies = sprite.Group()
@@ -160,9 +182,9 @@ while game:
                 print(enemy1.healthmy, bullet.damage)  
                 # for bullet in bullets:
                 bullet.kill()
-                        
                 if enemy1.healthmy <= 0:
                     enemy1.kill()
+                    kill += 1
                     enemy1 = Enemy('images (8)-no-bg-preview (carve.photos).png', 65, 65, randint(1, 5), randint(0, 635), -50)
                     enemies.add(enemy1)
         for e in event.get():
@@ -177,9 +199,7 @@ while game:
                         last_shot_time = current_time
                         bullet_dps = current_time
                         current_weapon = weapons[current_weapon_index]
-                        player.fire()
-
-                           
+                        player.fire()      
                 if e.key == K_o:
                     # print('p')
                     if not player.is_parrying:
@@ -193,9 +213,18 @@ while game:
                     current_weapon_index = 2
                 elif e.key == K_4 and len(weapons) > 3:
                     current_weapon_index = 3
-        if kill > 10:
-            finish = True
-            win.blit(winner, (200, 200))
+        if kill >= 1:
+            boss.reset()
+            enemies.empty()
+            sprites_list2 = sprite.spritecollide(boss, bullets, False)
+            for bullet in sprites_list2:
+                bullet.damage = current_weapon.dps
+                boss.healthb -= bullet.damage
+                print(boss.healthb, bullet.damage)  
+                bullet.kill()
+            if boss.healthb <= 0:
+                finish = True
+                win.blit(winner, (200, 200))
         if lost >= 100000000000000000:
             finish = True
             win.blit(losers, (200, 200))
